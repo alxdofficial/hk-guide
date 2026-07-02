@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hong Kong — explore map (shopping, sights, nature & more)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='white'%3EHK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#22201d}
+  #app{display:flex;flex-direction:column;height:100%}
+  header{padding:11px 16px;border-bottom:1px solid #e5e1d8;background:#fff;z-index:1000}
+  header h1{font-size:16px;margin:0 0 2px;font-weight:600}
+  header p{margin:0;font-size:12.5px;color:#77746c}
+  .home{display:inline-block;font-size:12px;color:#3b6fb0;text-decoration:none;font-weight:600;margin-bottom:3px}
+  .home:hover{text-decoration:underline}
+  #main{flex:1;position:relative}
+  #map{position:absolute;inset:0}
+  #panel{position:absolute;top:12px;right:12px;z-index:1000;background:#fff;border:1px solid #e5e1d8;
+    border-radius:10px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.14);font-size:12.5px;max-width:250px;max-height:calc(100% - 40px);overflow:auto}
+  .panel-toggle{position:absolute;top:12px;right:12px;z-index:1001;background:#fff;border:1px solid #e5e1d8;
+    border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;display:none}
+  #panel.collapsed{display:none}
+  @media(max-width:680px){
+    .panel-toggle{display:block}
+    #panel{top:54px;max-width:min(80vw,270px);max-height:calc(100% - 70px)}
+    header h1{font-size:15px}
+  }
+  #panel h2{font-size:11px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.05em;color:#77746c;font-weight:600}
+  .allbtns{display:flex;gap:6px;margin:2px 0 8px}
+  .allbtns button{font:inherit;font-size:11px;padding:3px 8px;border:1px solid #e5e1d8;background:#fff;border-radius:6px;cursor:pointer}
+  .row{display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer}
+  .row input{margin:0}
+  .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;border:1px solid rgba(0,0,0,.15)}
+  .row span.lbl{flex:1}
+  .cnt{color:#a8a49a;font-size:11px}
+  .hint{margin-top:9px;padding-top:9px;border-top:1px solid #eee;color:#8a8680;font-size:11.5px;line-height:1.45}
+  .leaflet-popup-content{font-size:13px;line-height:1.5;margin:11px 13px}
+  .leaflet-popup-content b{font-size:13.5px}
+  .leaflet-popup-content .meta{color:#555;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .refmark{font-size:18px;line-height:18px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="home" href="index.html">← Guide home</a>
+    <h1>Hong Kong — explore map</h1>
+    <p>Shopping, food, nightlife, sights, viewpoints, nature, temples, museums & heritage. Tap a dot for details + how to get there. 🏠 = your flat · 🏨 = hotels you're considering.</p>
+  </header>
+  <div id="main">
+    <div id="map"></div>
+    <button class="panel-toggle" id="ptoggle">☰ Categories</button>
+    <div id="panel">
+      <h2>Categories</h2>
+      <div class="allbtns"><button id="allOn">All</button><button id="allOff">None</button></div>
+      <div id="filters"></div>
+      <div class="hint">Most sights cluster on the north shore (Central–Wan Chai–TST) and the south side (Repulse Bay, Stanley, Shek O). Nature & islands ring the edges. Your LOHAS Park side is quiet — Sai Kung's beaches are your closest big nature escape.</div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const CATS={
+  market:   {label:"Markets & bazaars",      color:"#e8873a"},
+  mall:     {label:"Malls & shopping",       color:"#3b6fb0"},
+  food:     {label:"Food & dining streets",  color:"#cf4b3e"},
+  nightlife:{label:"Nightlife & bars",       color:"#8250b5"},
+  sight:    {label:"Landmarks & attractions",color:"#e84f8a"},
+  view:     {label:"Viewpoints & photo spots",color:"#e0a92e"},
+  nature:   {label:"Nature, hikes & beaches",color:"#3f9e5a"},
+  temple:   {label:"Temples & monasteries",  color:"#2f9e8f"},
+  museum:   {label:"Museums & galleries",    color:"#4b62c9"},
+  heritage: {label:"Heritage & creative hubs",color:"#9c6b3f"},
+};
+const POIS=[
+  // ---------- Markets & bazaars ----------
+  {n:"Ladies' Market (Tung Choi St)",c:"market",d:"Mong Kok",m:"MTR Mong Kok",b:"1 km of stalls: clothes, souvenirs, gadgets — haggle away.",ll:[22.3183,114.1706]},
+  {n:"Sneaker Street (Fa Yuen St)",c:"market",d:"Mong Kok",m:"MTR Mong Kok",b:"Wall-to-wall trainer shops with the latest drops.",ll:[22.3195,114.1717]},
+  {n:"Flower Market Road",c:"market",d:"Prince Edward",m:"MTR Prince Edward",b:"Blocks of florists and plants spilling onto the street.",ll:[22.3235,114.1698]},
+  {n:"Goldfish Market",c:"market",d:"Mong Kok",m:"MTR Prince Edward",b:"Aquarium & pet street along Tung Choi St North.",ll:[22.3218,114.1703]},
+  {n:"Yuen Po St Bird Garden",c:"market",d:"Prince Edward",m:"MTR Prince Edward",b:"Songbird market and garden — a local curiosity.",ll:[22.3243,114.1710]},
+  {n:"Temple Street Night Market",c:"market",d:"Yau Ma Tei",m:"MTR Jordan / Yau Ma Tei",b:"Iconic night market — street food, fortune-tellers, opera.",ll:[22.3065,114.1700]},
+  {n:"Jade Market",c:"market",d:"Yau Ma Tei",m:"MTR Yau Ma Tei",b:"Covered market for jade, beads and trinkets.",ll:[22.3085,114.1695]},
+  {n:"Apliu Street",c:"market",d:"Sham Shui Po",m:"MTR Sham Shui Po",b:"Electronics & flea-market gadgets, new and used.",ll:[22.3305,114.1622]},
+  {n:"Fabric Market (Ki Lung St)",c:"market",d:"Sham Shui Po",m:"MTR Sham Shui Po",b:"Textiles, buttons and DIY craft supplies.",ll:[22.3315,114.1615]},
+  {n:"Jardine's Bazaar & Crescent",c:"market",d:"Causeway Bay",m:"MTR Causeway Bay",b:"Old-school street market: cheap clothes, snacks, egg tarts.",ll:[22.2792,114.1838]},
+  {n:"Cat Street & Hollywood Rd",c:"market",d:"Sheung Wan",m:"MTR Sheung Wan",b:"Antiques, curios and art galleries near Man Mo Temple.",ll:[22.2843,114.1495]},
+  {n:"Stanley Market",c:"market",d:"Stanley",m:"Bus 6/6X/260 from Central",b:"Seaside market for souvenirs & art, with a promenade.",ll:[22.2188,114.2130]},
+  {n:"Granville Road",c:"market",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Bargain fashion, sample stores and accessories.",ll:[22.2989,114.1735]},
+  // ---------- Malls & shopping ----------
+  {n:"ifc mall",c:"mall",d:"Central",m:"MTR Central/Hong Kong",b:"Harbourfront luxury mall, Apple flagship, city'super.",ll:[22.2853,114.1588]},
+  {n:"Landmark",c:"mall",d:"Central",m:"MTR Central",b:"HK's ultra-luxury address — pure high fashion & Michelin dining.",ll:[22.2808,114.1578]},
+  {n:"Pacific Place",c:"mall",d:"Admiralty",m:"MTR Admiralty",b:"Refined luxury mall with Harvey Nichols & Great Food Hall.",ll:[22.2775,114.1655]},
+  {n:"Times Square",c:"mall",d:"Causeway Bay",m:"MTR Causeway Bay",b:"Original vertical mall — Gucci down to Zara, sports floors, FIFA Museum.",ll:[22.2795,114.1822]},
+  {n:"Lee Gardens & Hysan Place",c:"mall",d:"Causeway Bay",m:"MTR Causeway Bay",b:"Upscale cluster + youthful Hysan Place (Apple, eslite, Sephora).",ll:[22.2795,114.1858]},
+  {n:"Cityplaza",c:"mall",d:"Taikoo Shing",m:"MTR Tai Koo",b:"Big family mall — IKEA, MUJI, ice rink, cinema.",ll:[22.2865,114.2160]},
+  {n:"Harbour City",c:"mall",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"HK's largest mall — 450+ shops on the harbourfront.",ll:[22.2958,114.1682]},
+  {n:"K11 Musea",c:"mall",d:"Tsim Sha Tsui",m:"MTR East TST",b:"Art-meets-retail waterfront mall at Victoria Dockside.",ll:[22.2939,114.1745]},
+  {n:"Elements",c:"mall",d:"West Kowloon",m:"MTR Kowloon",b:"Calm luxury mall over Kowloon station — ice rink, cinema.",ll:[22.3040,114.1610]},
+  {n:"Langham Place",c:"mall",d:"Mong Kok",m:"MTR Mong Kok",b:"Youthful vertical mall — H&M, Uniqlo, Apple, spiral escalators.",ll:[22.3186,114.1685]},
+  {n:"Festival Walk",c:"mall",d:"Kowloon Tong",m:"MTR Kowloon Tong",b:"Bright family mall — Apple, M&S, big ice rink.",ll:[22.3370,114.1755]},
+  {n:"Airside",c:"mall",d:"Kai Tak",m:"MTR Kai Tak / Sung Wong Toi",b:"New lifestyle mega-mall — big MUJI, city'super, Japanese retail.",ll:[22.3300,114.1998]},
+  {n:"New Town Plaza",c:"mall",d:"Sha Tin",m:"MTR Sha Tin",b:"Huge NT flagship — Apple, YATA, city'super, Snoopy's World.",ll:[22.3820,114.1880]},
+  {n:"PopCorn",c:"mall",d:"Tseung Kwan O",m:"MTR Tseung Kwan O",b:"Main TKO mall on the MTR — closest big mall to you.",ll:[22.3075,114.2600]},
+  {n:"The LOHAS",c:"mall",d:"LOHAS Park",m:"MTR LOHAS Park",b:"Your local mall on top of the station — supermarket, cinema, daily needs.",ll:[22.2958,114.2695]},
+  {n:"Metro City Plaza",c:"mall",d:"Tseung Kwan O",m:"MTR Po Lam",b:"Sprawling value megamall — H&M, Citistore, cinema.",ll:[22.3235,114.2570]},
+  {n:"apm",c:"mall",d:"Kwun Tong",m:"MTR Kwun Tong",b:"Late-night mall (open to midnight) — Uniqlo, H&M, Apple.",ll:[22.3110,114.2260]},
+  // ---------- Food & dining streets ----------
+  {n:"Lee Tung Avenue",c:"food",d:"Wan Chai",m:"MTR Wan Chai",b:"Pedestrian boutique-and-dining avenue (old 'Wedding Card St').",ll:[22.2748,114.1722]},
+  {n:"Star St / Ship St pocket",c:"food",d:"Wan Chai",m:"MTR Admiralty/Wan Chai",b:"Hip enclave of wine bars, cafés and design shops.",ll:[22.2762,114.1705]},
+  {n:"Sham Shui Po eats & cafés",c:"food",d:"Sham Shui Po",m:"MTR Sham Shui Po",b:"Michelin street food meets new-wave coffee and design shops.",ll:[22.3308,114.1628]},
+  {n:"Kowloon City (Thai Town)",c:"food",d:"Kowloon City",m:"MTR Sung Wong Toi",b:"Thai food enclave — authentic curries, mango sticky rice.",ll:[22.3300,114.1895]},
+  {n:"Graham St / Gage St Market",c:"food",d:"Central",m:"MTR Central",b:"Old wet-market lane amid SoHo cafés — great food-tour turf.",ll:[22.2833,114.1535]},
+  // ---------- Nightlife & bars ----------
+  {n:"Lan Kwai Fong (LKF)",c:"nightlife",d:"Central",m:"MTR Central",b:"HK's most famous party quarter — bars packed along D'Aguilar St.",ll:[22.2809,114.1556]},
+  {n:"SoHo (Staunton & Elgin St)",c:"nightlife",d:"Central",m:"MTR Central",b:"Global dining & lounges along the Mid-Levels escalator.",ll:[22.2828,114.1519]},
+  {n:"Lockhart Road",c:"nightlife",d:"Wan Chai",m:"MTR Wan Chai",b:"Wan Chai's classic bar & pub strip with live music.",ll:[22.2778,114.1728]},
+  {n:"Knutsford Terrace",c:"nightlife",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Alfresco restaurants that turn into late-night bars.",ll:[22.3009,114.1727]},
+  // ---------- Landmarks & attractions ----------
+  {n:"Victoria Peak (The Peak)",c:"sight",d:"The Peak",m:"Peak Tram from Garden Rd",b:"HK's #1 view; Sky Terrace 428 + Peak Tram ride.",ll:[22.2759,114.1494]},
+  {n:"Peak Tram (lower terminus)",c:"sight",d:"Central",m:"MTR Central/Admiralty + walk",b:"Historic funicular up to Victoria Peak.",ll:[22.2775,114.1601]},
+  {n:"Star Ferry (TST Pier)",c:"sight",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Iconic, cheap harbour crossing to Central/Wan Chai.",ll:[22.2937,114.1685]},
+  {n:"Avenue of Stars",c:"sight",d:"Tsim Sha Tsui",m:"MTR East TST",b:"Waterfront walk; watch the 8pm Symphony of Lights.",ll:[22.2934,114.1740]},
+  {n:"Clock Tower",c:"sight",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"1915 railway relic on the harbourfront.",ll:[22.2938,114.1689]},
+  {n:"HK Observation Wheel",c:"sight",d:"Central",m:"MTR Hong Kong/Central",b:"Ferris wheel on the Central harbourfront.",ll:[22.2856,114.1618]},
+  {n:"Big Buddha & Po Lin Monastery",c:"sight",d:"Lantau",m:"Ngong Ping 360 cable car from Tung Chung",b:"Giant bronze Buddha atop a mountain; cable-car journey.",ll:[22.2540,113.9049]},
+  {n:"Hong Kong Disneyland",c:"sight",d:"Lantau",m:"MTR Disneyland Resort line",b:"Full Disney theme park with its own MTR line.",ll:[22.3130,114.0430]},
+  {n:"Ocean Park",c:"sight",d:"Aberdeen",m:"MTR South Island line, Ocean Park",b:"Classic marine theme park & cable car over the sea.",ll:[22.2465,114.1745]},
+  // ---------- Viewpoints & photo spots ----------
+  {n:"Sky100 Observation Deck",c:"view",d:"West Kowloon",m:"MTR Kowloon",b:"100th-floor indoor deck in the ICC tower.",ll:[22.3033,114.1601]},
+  {n:"Lugard Road (Peak loop)",c:"view",d:"The Peak",m:"Peak Tram + walk",b:"Flat, tree-lined loop with the classic skyline photo.",ll:[22.2710,114.1455]},
+  {n:"Red Incense Burner Summit (Braemar Hill)",c:"view",d:"North Point",m:"Bus + hike",b:"Famous (steep) skyline-photo lookout.",ll:[22.2835,114.2015]},
+  {n:"Choi Hung Estate",c:"view",d:"Wong Tai Sin",m:"MTR Choi Hung",b:"Rainbow-coloured housing blocks — Instagram basketball court.",ll:[22.3352,114.2090]},
+  {n:"'Monster Building' (Quarry Bay)",c:"view",d:"Quarry Bay",m:"MTR Quarry Bay",b:"Dizzying dense-tenement photo spot (be respectful — residents live here).",ll:[22.2867,114.2118]},
+  {n:"Tsim Sha Tsui Promenade",c:"view",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Best skyline & Symphony of Lights viewpoint.",ll:[22.2935,114.1725]},
+  {n:"West Kowloon Art Park",c:"view",d:"West Kowloon",m:"MTR Kowloon/Austin",b:"Grassy waterfront lawns facing the Island skyline.",ll:[22.3010,114.1585]},
+  {n:"Devil's Peak",c:"view",d:"Yau Tong",m:"MTR Yau Tong + hike",b:"Old fort with harbour views over Lei Yue Mun.",ll:[22.2955,114.2385]},
+  // ---------- Nature, hikes & beaches ----------
+  {n:"Dragon's Back trail",c:"nature",d:"Shek O",m:"Bus 9 from Shau Kei Wan",b:"HK's most famous hike — easy ridge with sea views.",ll:[22.2405,114.2470]},
+  {n:"Shek O Beach & village",c:"nature",d:"Shek O",m:"Bus 9 from Shau Kei Wan",b:"Laid-back beach village on the SE tip.",ll:[22.2295,114.2520]},
+  {n:"Big Wave Bay",c:"nature",d:"Shek O",m:"Bus/taxi from Shau Kei Wan",b:"Surf beach at the end of Dragon's Back.",ll:[22.2470,114.2530]},
+  {n:"Repulse Bay",c:"nature",d:"Southern",m:"Bus 6/260 from Central",b:"Popular crescent beach on the south side.",ll:[22.2360,114.1960]},
+  {n:"Sai Kung town & waterfront",c:"nature",d:"Sai Kung",m:"MTR Choi Hung + minibus 1A",b:"Seafood, boats, and the gateway to HK's best beaches.",ll:[22.3820,114.2735]},
+  {n:"Tai Long Wan",c:"nature",d:"Sai Kung",m:"Boat/hike from Sai Kung",b:"Stunning remote surf beaches (a proper day trip).",ll:[22.4090,114.3670]},
+  {n:"High Island Reservoir East Dam",c:"nature",d:"Sai Kung",m:"Taxi from Sai Kung",b:"UNESCO Geopark — hexagonal rock columns & sea cliffs.",ll:[22.3560,114.3630]},
+  {n:"Lion Rock",c:"nature",d:"Kowloon/Sha Tin",m:"MTR Wong Tai Sin + hike",b:"Iconic (strenuous) peak overlooking Kowloon.",ll:[22.3520,114.1870]},
+  {n:"Hong Kong Park",c:"nature",d:"Admiralty",m:"MTR Admiralty",b:"Central green oasis with a walk-through aviary.",ll:[22.2775,114.1620]},
+  {n:"Victoria Park",c:"nature",d:"Causeway Bay",m:"MTR Tin Hau/Causeway Bay",b:"Big city park — jogging, courts, Lunar New Year fair.",ll:[22.2822,114.1888]},
+  {n:"Nan Lian Garden & Chi Lin Nunnery",c:"nature",d:"Diamond Hill",m:"MTR Diamond Hill",b:"Serene Tang-dynasty-style garden beside a Buddhist nunnery.",ll:[22.3392,114.2008]},
+  {n:"Kowloon Walled City Park",c:"nature",d:"Kowloon City",m:"MTR Lok Fu",b:"Tranquil garden on the site of the infamous Walled City.",ll:[22.3322,114.1897]},
+  {n:"HK Wetland Park",c:"nature",d:"Tin Shui Wai",m:"MTR Tin Shui Wai + LRT",b:"Boardwalks, birds and mangroves near the border.",ll:[22.4676,114.0065]},
+  {n:"Tai Mo Shan",c:"nature",d:"Tsuen Wan",m:"Bus 51 + hike",b:"HK's highest peak (957 m) — cool, misty summit road.",ll:[22.4103,114.1240]},
+  {n:"Cheung Chau",c:"nature",d:"Outlying island",m:"Ferry from Central Pier 5",b:"Car-free island — beaches, seafood, temples, Bun Festival.",ll:[22.2103,114.0270]},
+  {n:"Lamma Island (Yung Shue Wan)",c:"nature",d:"Outlying island",m:"Ferry from Central Pier 4",b:"Chill island — seafood, easy hike, no cars.",ll:[22.2283,114.1095]},
+  // ---------- Temples & monasteries ----------
+  {n:"Man Mo Temple",c:"temple",d:"Sheung Wan",m:"MTR Sheung Wan",b:"Historic incense-coiled temple to literature & war gods.",ll:[22.2841,114.1497]},
+  {n:"Wong Tai Sin Temple",c:"temple",d:"Wong Tai Sin",m:"MTR Wong Tai Sin",b:"Bustling, colourful 'make-a-wish' Taoist temple.",ll:[22.3423,114.1934]},
+  {n:"Chi Lin Nunnery",c:"temple",d:"Diamond Hill",m:"MTR Diamond Hill",b:"Elegant Tang-style wooden Buddhist complex.",ll:[22.3392,114.2020]},
+  {n:"Ten Thousand Buddhas Monastery",c:"temple",d:"Sha Tin",m:"MTR Sha Tin + climb",b:"Hillside climb past thousands of golden statues.",ll:[22.3690,114.1830]},
+  {n:"Tin Hau Temple (Yau Ma Tei)",c:"temple",d:"Yau Ma Tei",m:"MTR Yau Ma Tei",b:"Old sea-goddess temple beside Temple Street.",ll:[22.3082,114.1705]},
+  // ---------- Museums & galleries ----------
+  {n:"M+",c:"museum",d:"West Kowloon",m:"MTR Kowloon/Austin",b:"Asia's leading museum of visual culture & design.",ll:[22.3020,114.1585]},
+  {n:"Hong Kong Palace Museum",c:"museum",d:"West Kowloon",m:"MTR Kowloon/Austin",b:"Chinese art & antiquities from the Forbidden City.",ll:[22.3009,114.1548]},
+  {n:"HK Museum of History",c:"museum",d:"Tsim Sha Tsui East",m:"MTR East TST",b:"'The Hong Kong Story' — great intro to the city.",ll:[22.3015,114.1772]},
+  {n:"HK Science Museum",c:"museum",d:"Tsim Sha Tsui East",m:"MTR East TST",b:"Hands-on family science museum.",ll:[22.3020,114.1778]},
+  {n:"HK Space Museum",c:"museum",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Planetarium dome on the harbourfront.",ll:[22.2940,114.1718]},
+  {n:"HK Museum of Art",c:"museum",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Chinese & HK art beside the promenade.",ll:[22.2935,114.1712]},
+  {n:"HK Heritage Museum",c:"museum",d:"Sha Tin",m:"MTR Che Kung Temple",b:"Cantonese opera, Bruce Lee & Jin Yong galleries.",ll:[22.3762,114.1852]},
+  // ---------- Heritage & creative hubs ----------
+  {n:"Central Market",c:"heritage",d:"Central",m:"MTR Central",b:"1930s Bauhaus market reborn as shops, food & events.",ll:[22.2843,114.1558]},
+  {n:"PMQ",c:"heritage",d:"Central",m:"MTR Sheung Wan/Central",b:"Former police quarters — design studios and creative shops.",ll:[22.2836,114.1512]},
+  {n:"Tai Kwun",c:"heritage",d:"Central",m:"MTR Central",b:"Restored Central Police Station — art, heritage & dining.",ll:[22.2818,114.1541]},
+  {n:"1881 Heritage",c:"heritage",d:"Tsim Sha Tsui",m:"MTR Tsim Sha Tsui",b:"Colonial Marine Police HQ turned heritage shopping.",ll:[22.2952,114.1697]},
+  {n:"Blue House",c:"heritage",d:"Wan Chai",m:"MTR Wan Chai",b:"Award-winning restored tenement (blue balconies).",ll:[22.2745,114.1745]},
+  {n:"Shanghai Street",c:"heritage",d:"Yau Ma Tei / Mong Kok",m:"MTR Yau Ma Tei",b:"Old kitchenware & shopfitting street with heritage shophouses.",ll:[22.3110,114.1702]},
+  {n:"Western Market",c:"heritage",d:"Sheung Wan",m:"MTR Sheung Wan",b:"Edwardian market building — fabrics and cafés.",ll:[22.2871,114.1519]},
+  {n:"Cattle Depot Artist Village",c:"heritage",d:"To Kwa Wan",m:"MTR To Kwa Wan",b:"Former slaughterhouse turned art studios.",ll:[22.3200,114.1900]},
+];
+const REFS=[
+  {n:"🏠 Your flat — Villa Garda I, LOHAS Park",ll:[22.2958,114.2718],icon:"🏠"},
+  {n:"🏨 Mandarin Oriental, Hong Kong — Central (5 Connaught Rd)",ll:[22.2819,114.1602],icon:"🏨"},
+  {n:"🏨 Dorsett Kai Tak — Kai Tak (43 Shing Kai Rd)",ll:[22.3278,114.2018],icon:"🏨"},
+  {n:"🏨 Dorsett Mongkok — Tai Kok Tsui (88 Tai Kok Tsui Rd)",ll:[22.3222,114.1622],icon:"🏨"},
+  {n:"🏨 Dorsett Wanchai — Wan Chai (considering)",ll:[22.2735,114.1738],icon:"🏨"},
+];
+
+const map=L.map("map",{zoomControl:true}).setView([22.32,114.15],11);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+  attribution:'&copy; OpenStreetMap, &copy; CARTO',subdomains:"abcd",maxZoom:19}).addTo(map);
+
+const groups={}; const counts={};
+for(const k in CATS){groups[k]=L.layerGroup().addTo(map);counts[k]=0;}
+const allLL=[];
+for(const p of POIS){
+  allLL.push(p.ll); counts[p.c]=(counts[p.c]||0)+1;
+  const mk=L.circleMarker(p.ll,{radius:6.5,weight:2,color:"#fff",
+    fillColor:CATS[p.c].color,fillOpacity:.95});
+  mk.bindPopup(`<b>${p.n}</b><br><span class="meta">${p.d} · ${p.m}</span><br>${p.b}`);
+  mk.bindTooltip(p.n,{direction:"top",opacity:.9});
+  mk.addTo(groups[p.c]);
+}
+for(const r of REFS){
+  allLL.push(r.ll);
+  L.marker(r.ll,{icon:L.divIcon({className:"",html:`<div class="refmark">${r.icon}</div>`,iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000})
+   .bindPopup(`<b>${r.n}</b>`).addTo(map);
+}
+map.fitBounds(allLL,{padding:[40,40]});
+
+const fbox=document.getElementById("filters");
+for(const k in CATS){
+  const row=document.createElement("label"); row.className="row";
+  row.innerHTML=`<input type="checkbox" checked data-cat="${k}">
+    <span class="dot" style="background:${CATS[k].color}"></span>
+    <span class="lbl">${CATS[k].label}</span><span class="cnt">${counts[k]||0}</span>`;
+  row.querySelector("input").addEventListener("change",e=>{
+    if(e.target.checked) groups[k].addTo(map); else map.removeLayer(groups[k]);
+  });
+  fbox.appendChild(row);
+}
+function setAll(on){document.querySelectorAll("#filters input").forEach(i=>{
+  i.checked=on; const k=i.dataset.cat; if(on) groups[k].addTo(map); else map.removeLayer(groups[k]);});}
+document.getElementById("allOn").onclick=()=>setAll(true);
+document.getElementById("allOff").onclick=()=>setAll(false);
+
+// mobile: collapsible panel
+const _pt=document.getElementById("ptoggle"),_pnl=document.getElementById("panel");
+if(window.matchMedia("(max-width:680px)").matches)_pnl.classList.add("collapsed");
+_pt.onclick=()=>_pnl.classList.toggle("collapsed");
+</script>
+</body>
+</html>

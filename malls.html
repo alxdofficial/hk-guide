@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hong Kong malls — brand directory</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='white'%3EHK%3C/text%3E%3C/svg%3E">
+<style>
+  :root{--ink:#23211e;--muted:#78756c;--line:#e5e1d8;--bg:#faf8f3;--card:#fff;--accent:#1f3a5f;--chip:#eef1f5}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+  header{padding:14px 18px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:5}
+  header h1{font-size:17px;margin:0 0 2px;font-weight:600}
+  header p{margin:0;font-size:12.5px;color:var(--muted)}
+  .home{display:inline-block;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;margin-bottom:3px}
+  .home:hover{text-decoration:underline}
+  .tabs{display:flex;gap:6px;margin-top:10px}
+  .tab{font:inherit;font-size:13px;padding:6px 14px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;color:var(--ink)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .wrap{padding:14px 18px;max-width:1100px;margin:0 auto}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  input[type=search]{font:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;min-width:230px;flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;user-select:none}
+  .chip.on{background:var(--chip);border-color:#c9d3e0;color:var(--accent);font-weight:600}
+  .count{font-size:12.5px;color:var(--muted);margin:4px 0 10px}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--line)}
+  table{width:100%;min-width:560px;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:13.5px}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid #f0ede6}
+  th{background:#f6f3ec;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);cursor:pointer;position:sticky;top:0}
+  tr:last-child td{border-bottom:none}
+  td.brand{font-weight:600}
+  .tier{font-size:11px;padding:2px 7px;border-radius:6px;white-space:nowrap}
+  .t-ultra{background:#2a1a3e;color:#fff}.t-lux{background:#5b3f86;color:#fff}
+  .t-upper{background:#2f6f9e;color:#fff}.t-mid{background:#3d8f6f;color:#fff}.t-mass{background:#b0873a;color:#fff}
+  .cat{font-size:11px;color:var(--muted)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  @media(max-width:600px){
+    .cards{grid-template-columns:1fr}
+    header h1{font-size:16px}
+    input[type=search]{min-width:0}
+    .wrap{padding:12px}
+  }
+  .mall{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px}
+  .mall h3{margin:0 0 3px;font-size:15px}
+  .mall .loc{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .mall .anchors{font-size:12.5px;margin:8px 0;padding:8px 10px;background:#f6f3ec;border-radius:8px}
+  .mall .anchors b{color:var(--accent)}
+  .mall details{margin-top:6px;font-size:12.5px}
+  .mall summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:12.5px}
+  .mall .brandline{margin:5px 0}
+  .mall .brandline b{font-weight:600;color:#444}
+  .mall a{color:var(--accent);font-size:12px}
+  .hide{display:none}
+  .note{font-size:11.5px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <a class="home" href="index.html">← Guide home</a>
+  <h1>Hong Kong malls — brand directory</h1>
+  <p>17 major malls · search a brand to see which malls carry it, or browse each mall. Tiers from ultra-luxury to mass-market. Lists are representative, not exhaustive.</p>
+  <div class="tabs">
+    <button class="tab active" data-view="find">Find a brand</button>
+    <button class="tab" data-view="browse">Browse malls</button>
+  </div>
+</header>
+<div class="wrap">
+  <!-- FIND -->
+  <div id="find">
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search a brand (e.g. Uniqlo, Rolex, IKEA, Nike)…">
+    </div>
+    <div class="chips" id="catchips"></div>
+    <div class="count" id="count"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th data-k="brand">Brand ▾</th><th data-k="cat">Category</th><th data-k="mall">Mall</th><th data-k="area">Area</th><th data-k="tier">Tier</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- BROWSE -->
+  <div id="browse" class="hide"><div class="cards" id="cards"></div></div>
+  <div class="note" id="srcnote"></div>
+</div>
+<script>
+const TIER={ultra:["Ultra-luxury","t-ultra"],lux:["Luxury","t-lux"],upper:["Upper-mid","t-upper"],mid:["Mid-market","t-mid"],mass:["Mass / value","t-mass"]};
+// category order + labels
+const CATS=["Luxury fashion","Watches & jewellery","Contemporary / mid fashion","Beauty & cosmetics","Sportswear & outdoor","Electronics & tech","Kids & toys","Home & lifestyle","Dining & F&B"];
+const MALLS=[
+ {n:"ifc mall",area:"Central, HK Island",tier:"lux",url:"https://ifc.com.hk/en/mall/shopping/",
+  anchors:"Lane Crawford · city'super · PALACE ifc cinema · Apple flagship",
+  b:{"Luxury fashion":["Chanel","Bottega Veneta","Celine","Loewe","Loro Piana","Valentino","Moncler","Max Mara","Zegna","Brunello Cucinelli","Chloé","Tom Ford","Tory Burch","Golden Goose","Canada Goose"],
+     "Watches & jewellery":["Rolex","Tudor","Patek Philippe","Audemars Piguet","Cartier","Bvlgari","Tiffany & Co.","Chopard","IWC","Jaeger-LeCoultre","Hublot","Panerai","TAG Heuer"],
+     "Contemporary / mid fashion":["Zara","Massimo Dutti","Brandy Melville","Club Monaco","Polo Ralph Lauren","Theory","Sandro","Maje","ba&sh","MAX&Co.","Diesel","Brooks Brothers","self-portrait"],
+     "Beauty & cosmetics":["Sephora","Dior Beauty","YSL Beauté","Armani Beauty","Aesop","Jo Malone London","Le Labo","Diptyque","Kiehl's","La Prairie","SK-II","NARS"],
+     "Sportswear & outdoor":["Arc'teryx","lululemon","Descente"],
+     "Electronics & tech":["Apple","Bang & Olufsen","Devialet","Dyson","Leica"],
+     "Kids & toys":["Jacadi","Simply Toys","moodytiger"],
+     "Home & lifestyle":["Lalique","Wedgwood","Moleskine","Victorinox","Royal Selangor"],
+     "Dining & F&B":["Bacha Coffee","Cova","La Maison du Chocolat","Pierre Marcolini","Lady M","Sabatini","Venchi","Godiva"]}},
+ {n:"Landmark",area:"Central, HK Island",tier:"ultra",url:"https://www.landmark.hk/en/shop",
+  anchors:"Gallery HBX · Sotheby's Maison · Market Place · no Apple · no fast fashion",
+  b:{"Luxury fashion":["Louis Vuitton","Dior","Gucci","Prada","Celine","Balenciaga","Saint Laurent","Bottega Veneta","Loewe","Valentino","Fendi","Hermès","Berluti","Loro Piana","Miu Miu","Roger Vivier","Tod's","Chrome Hearts","Acne Studios","sacai","Ralph Lauren","Burberry","Ferragamo"],
+     "Watches & jewellery":["Patek Philippe","Vacheron Constantin","A. Lange & Söhne","Jaeger-LeCoultre","Panerai","Blancpain","Chopard","F.P. Journe","Cartier","Bvlgari","Van Cleef & Arpels","Tiffany & Co.","De Beers","Buccellati","Chaumet"],
+     "Home & lifestyle":["Rimowa","Baccarat","Christofle","CASETiFY","Bookazine"],
+     "Dining & F&B":["Amber","8½ Otto e Mezzo Bombana","L'Atelier de Joël Robuchon","Sushi Shikon","Zuma","China Tang","The Aubrey","Café Landmark"]}},
+ {n:"Pacific Place",area:"Admiralty, HK Island",tier:"lux",url:"https://www.pacificplace.com.hk/en/directory",
+  anchors:"Harvey Nichols · Lane Crawford · Great Food Hall · MOViE MOViE · no Apple",
+  b:{"Luxury fashion":["Louis Vuitton","Dior","Gucci","Hermès","Fendi","Celine","Loewe","Prada","Miu Miu","Loro Piana","Chloé","Bottega Veneta","Chanel","Dolce&Gabbana","Burberry","Giorgio Armani","Zegna","Moncler","Goyard","Tom Ford","Jimmy Choo","Shanghai Tang","Ralph Lauren"],
+     "Watches & jewellery":["Cartier","Van Cleef & Arpels","Tiffany & Co.","Bvlgari","Chaumet","Blancpain","Omega","IWC","Jaeger-LeCoultre","Richard Mille"],
+     "Contemporary / mid fashion":["Zara","COS","Theory","Maje","ba&sh","American Vintage","MAX&Co.","Marimekko","Vilebrequin","JOYCE","Calvin Klein Underwear"],
+     "Beauty & cosmetics":["La Mer","La Prairie","Chanel Beauté","JOYCE Beauty","Aveda"],
+     "Sportswear & outdoor":["lululemon","Nike","adidas","Arc'teryx","Descente","On Running","The North Face","GigaSports"],
+     "Kids & toys":["Jacadi","Simply Toys","Petit Bazaar"],
+     "Home & lifestyle":["MUJI","André Fu Living","Kelly & Walsh","Bamford"],
+     "Dining & F&B":["Shake Shack","Dim Sum Library","Armani/Caffè","Cova","Lady M","Ralph's Coffee","Venchi","Peking Garden"]}},
+ {n:"Times Square",area:"Causeway Bay, HK Island",tier:"upper",url:"https://timessquare.com.hk/shop-dine/shopping/",
+  anchors:"Lane Crawford · city'super · Emperor Cinemas · FIFA Museum · no Apple",
+  b:{"Luxury fashion":["Gucci","Louis Vuitton","Dior","Chanel","Celine","Saint Laurent","Loewe","Bottega Veneta","Marni","Max Mara","Ferragamo","Jimmy Choo","Tory Burch","Qeelin"],
+     "Watches & jewellery":["Cartier","Jaeger-LeCoultre","Blancpain","Panerai","Zenith","Tasaki","Chow Sang Sang","Chow Tai Fook","Swarovski","APM Monaco","G-Shock"],
+     "Contemporary / mid fashion":["Zara","Massimo Dutti","Diesel","Club Monaco","Maje","Sandro","Tommy Hilfiger","Calvin Klein","Polo Ralph Lauren","Levi's","agnès b.","American Vintage","Brooks Brothers","AAPE","American Eagle","MLB"],
+     "Beauty & cosmetics":["Chanel Beauté","Dior Beauty","M.A.C","Clinique","Benefit","Make Up For Ever","Fenty Beauty","The Ordinary","The Face Shop","L'Occitane","Rituals","Fancl","Shiseido"],
+     "Sportswear & outdoor":["Nike","New Balance","FILA","Columbia","Timberland","Crocs","Marathon Sports","adidas"],
+     "Electronics & tech":["Fortress","Bose","Suning","Broadway"],
+     "Kids & toys":["LEGO Certified Store","Wise Kids","Donguri Republic (Ghibli)"],
+     "Home & lifestyle":["LOG-ON","Victorinox","Samsonite"],
+     "Dining & F&B":["city'super deli","ITSU","The Barn","Nannini"]}},
+ {n:"Lee Gardens & Hysan Place",area:"Causeway Bay, HK Island",tier:"lux",url:"https://www.leegardens.com.hk/shopping.aspx",
+  anchors:"Apple (Hysan Place) · eslite books · T Galleria Beauty by DFS · Slowood",
+  b:{"Luxury fashion":["Louis Vuitton","Chanel","Christian Dior","Hermès","Valentino","Christian Louboutin","Anya Hindmarch","Shiatzy Chen","St. John","Baby Dior","Gucci Kids","Fendi Kids","Burberry Children","Bonpoint"],
+     "Watches & jewellery":["Rolex","Tudor","Chaumet","Fred","Pandora"],
+     "Contemporary / mid fashion":["Abercrombie & Fitch","Hollister","Converse","Dr. Martens","MLB","SNIDEL","i.t","Vans","Topologie"],
+     "Beauty & cosmetics":["Sephora","T Galleria Beauty by DFS","Aesop","Diptyque","Serge Lutens","Chanel Beauté","Burberry Beauty","JOYCE Beauty"],
+     "Sportswear & outdoor":["lululemon","New Balance","Salomon","Vans","The North Face"],
+     "Electronics & tech":["Apple","Sony","MOMAX"],
+     "Kids & toys":["Toys\"R\"Us","Simply Toys","POP MART"],
+     "Home & lifestyle":["Moleskine","Slowood","eslite","Kinokuniya"],
+     "Dining & F&B":["Seasons by Olivier Elzer","Pret A Manger","Kitchen 11 food hall"]}},
+ {n:"Cityplaza",area:"Taikoo Shing, HK Island",tier:"upper",url:"https://www.cityplaza.com/en/shop",
+  anchors:"APITA · Marks & Spencer · MOViE MOViE · Ice Palace rink · Samsung (no Apple)",
+  b:{"Luxury fashion":["Coach","Furla","Polo Ralph Lauren"],
+     "Watches & jewellery":["Chow Sang Sang","City Chain","MaBelle","Swarovski","Pandora"],
+     "Contemporary / mid fashion":["UNIQLO","GU","COS","MARELLA","MAX&Co.","Massimo Dutti","Club Monaco","Theory","Tommy Hilfiger","Levi's","G2000","Giordano","Global Work","niko and…","SNIDEL","Charles & Keith"],
+     "Beauty & cosmetics":["Bobbi Brown","Chanel Beauté","Shiseido","Innisfree","Fancl","L'Occitane","Sabon","Rituals","Watsons","Mannings Plus"],
+     "Sportswear & outdoor":["adidas","ASICS","New Balance","Nike","FILA","Skechers","Columbia","Patagonia","lululemon","Decathlon"],
+     "Electronics & tech":["Fortress","Broadway","Challenger","Samsung"],
+     "Kids & toys":["Toys\"R\"Us","LEGO Store","Chicco","moodytiger","Jumpin Gym"],
+     "Home & lifestyle":["IKEA","MUJI","Francfranc","Marimekko","HOMELESS","LOG-ON","Cath Kidston"],
+     "Dining & F&B":["APITA food hall","bread n butter"]}},
+ {n:"Harbour City",area:"Tsim Sha Tsui, Kowloon",tier:"ultra",url:"https://www.harbourcity.com.hk/en/shop-dine/shop/",
+  anchors:"Lane Crawford · city'super · Grand Ocean cinema · Toys\"R\"Us · Ocean Terminal Deck · HK's largest mall",
+  b:{"Luxury fashion":["Louis Vuitton","Chanel","Hermès","Gucci","Prada","Fendi","Dior","Valentino","Miu Miu","Dolce & Gabbana","Moncler","Giorgio Armani","Coach","Burberry"],
+     "Contemporary / mid fashion":["Zara","Uniqlo","GAP","Abercrombie & Fitch","Massimo Dutti","Charles & Keith","JOYCE"],
+     "Beauty & cosmetics":["Laneige"],
+     "Sportswear & outdoor":["Nike","adidas","New Balance","Puma","GigaSports"],
+     "Electronics & tech":["Fortress"],
+     "Kids & toys":["Toys\"R\"Us"],
+     "Home & lifestyle":["MUJI","Kinokuniya"],
+     "Dining & F&B":["70+ restaurants","city'super food hall"]}},
+ {n:"K11 Musea",area:"Tsim Sha Tsui, Kowloon",tier:"lux",url:"https://www.k11musea.com/",
+  anchors:"Art-mall · AP House · gourmet food halls · Nature Discovery Park · no Apple",
+  b:{"Luxury fashion":["Gucci","Chanel","Armani","Prada","Miu Miu","Loewe","Saint Laurent","Balenciaga","Brunello Cucinelli","Delvaux","Tory Burch"],
+     "Watches & jewellery":["Van Cleef & Arpels","Rolex","Audemars Piguet"],
+     "Beauty & cosmetics":["Sephora","Dior Beauty","Shiro","Bath & Body Works"],
+     "Sportswear & outdoor":["lululemon","NBA Atelier"],
+     "Dining & F&B":["Extensive premium F&B","Nature Discovery Park"]}},
+ {n:"Elements",area:"West Kowloon (Kowloon stn)",tier:"lux",url:"https://www.elementshk.com/eng/elements/shopInfo/list",
+  anchors:"Premiere Cinema · The Rink (ice) · linked to ICC & high-speed rail · no Apple",
+  b:{"Luxury fashion":["Chanel","Louis Vuitton","Gucci","Fendi","Valentino","Miu Miu","Ferragamo","Versace","Burberry","Coach","Montblanc"],
+     "Watches & jewellery":["Cartier","Rolex"],
+     "Contemporary / mid fashion":["Zara","H&M","Diesel","DKNY","Anteprima"]}},
+ {n:"Langham Place",area:"Mong Kok, Kowloon",tier:"upper",url:"https://www.langhamplace.com.hk/shopping",
+  anchors:"GALA Cinema · Apple · spiral 'Digital Sky' escalators · youth/trend",
+  b:{"Contemporary / mid fashion":["H&M","Zara","Uniqlo","Monki","i.t","United Colors of Benetton","Levi's","Vans","Timberland","Fred Perry","Charles & Keith"],
+     "Beauty & cosmetics":["Shu Uemura","Laneige","innisfree"],
+     "Sportswear & outdoor":["Nike","adidas"],
+     "Electronics & tech":["Apple"],
+     "Home & lifestyle":["MUJI"]}},
+ {n:"Festival Walk",area:"Kowloon Tong, Kowloon",tier:"upper",url:"https://www.festivalwalk.com.hk/en/shopping",
+  anchors:"Marks & Spencer · TASTE · Festival Grand cinema (MCL) · Glacier ice rink · Apple",
+  b:{"Contemporary / mid fashion":["Uniqlo","H&M","Marks & Spencer","COS","Charles & Keith"],
+     "Electronics & tech":["Apple","Fortress"],
+     "Home & lifestyle":["Francfranc","LOG-ON","MUJI"],
+     "Dining & F&B":["Food court + restaurants (LG2–L2)"]}},
+ {n:"Airside",area:"Kai Tak, Kowloon",tier:"mid",url:"https://www.airside.com.hk/shopping",
+  anchors:"city'super (+LOG-ON) · GreenPrice · MCL cinema · big MUJI · Samsung/Tesla/XPENG (no Apple)",
+  b:{"Contemporary / mid fashion":["LAKH","Her Own Words","Supreme","PECOSA FINERY"],
+     "Beauty & cosmetics":["FANCL","OLENS"],
+     "Sportswear & outdoor":["New Era","HF Sport","Pro Runner Lab"],
+     "Electronics & tech":["Samsung","Fortress","Tesla","XPENG"],
+     "Kids & toys":["Toys\"R\"Us","balabala","POP MART"],
+     "Home & lifestyle":["MUJI","Indigo Living","HOMELESS","Miele","Nespresso","3COINS","BRUNO"],
+     "Dining & F&B":["40+ restaurants","city'super food hall"]}},
+ {n:"New Town Plaza",area:"Sha Tin, New Territories",tier:"upper",url:"https://www.newtownplaza.com.hk/shopping/",
+  anchors:"YATA dept + supermarket · city'super · Marks & Spencer · MOViE TOWN · Apple · Snoopy's World",
+  b:{"Luxury fashion":["Armani","Coach"],
+     "Watches & jewellery":["Rolex"],
+     "Contemporary / mid fashion":["UNIQLO","GU","ZARA","agnès b.","Marks & Spencer","MUJI","Marimekko","Abercrombie & Fitch","American Eagle","2nd Street","Charles & Keith"],
+     "Beauty & cosmetics":["Sephora","SaSa","Clinique","Shiseido","Kiehl's","L'Occitane","Laneige"],
+     "Sportswear & outdoor":["Nike","adidas","New Balance","ASICS","Puma","Skechers","Decathlon","On Running"],
+     "Electronics & tech":["Apple","Samsung","Fortress","Broadway","CASETiFY"],
+     "Kids & toys":["Toys\"R\"Us","LEGO","POP MART"],
+     "Home & lifestyle":["MUJI","LOG-ON","Marimekko"],
+     "Dining & F&B":["50+ restaurants","Chun Shui Tang"]}},
+ {n:"PopCorn",area:"Tseung Kwan O (nr LOHAS Park)",tier:"mid",url:"https://www.popcorntko.com.hk/en/shops",
+  anchors:"Market Place by Jasons · STAR Cinema · J SELECT · closest big mall to you · no Apple",
+  b:{"Contemporary / mid fashion":["UNIQLO","agnès b. & SPORT b.","Calvin Klein Underwear","Chevignon","2nd Street","Aigle","ecco","Crocs","Staccato"],
+     "Beauty & cosmetics":["Estée Lauder","Clinique","Bobbi Brown","Dior Beauty","Innisfree","TONYMOLY","Caudalie","Sa Sa","Watsons","Mannings"],
+     "Sportswear & outdoor":["adidas","ASICS","The North Face","Crocs"],
+     "Electronics & tech":["Fortress","Mi Home (Xiaomi)","csl","CASETiFY","G-SHOCK"],
+     "Kids & toys":["LEGO Certified Store","POP MART","Fufuland"],
+     "Home & lifestyle":["LOG-ON","Francfranc","J SELECT","Mi Home","OSIM"],
+     "Dining & F&B":["Putien","agnès b. CAFÉ","TeaWood","Sushi Senju","Men Wah Bing Teng","Starbucks","Luckin","Chagee"]}},
+ {n:"The LOHAS",area:"LOHAS Park (your local mall)",tier:"mid",url:"https://www.thelohasmall.com/en/shops",
+  anchors:"Mono Mono (AEON) · FRESH supermarket + Friendship Market · MOViE TOWN · LOHAS ice rink · on top of your station",
+  b:{"Contemporary / mid fashion":["GU","adidas","New Balance","Skechers","Baleno"],
+     "Beauty & cosmetics":["Sa Sa","TONYMOLY","Yves Rocher","Watsons","Mannings","matsukiyo"],
+     "Home & lifestyle":["JHC (Japan Home Centre)","Mono Mono","Meyer","Parsons Music","eslite me-time"],
+     "Electronics & tech":["Fortress","csl","Fotomax"],
+     "Dining & F&B":["Genki Sushi","Nabe Urawa","Modern Shanghai","TamJai Yunnan Mixian","TeaWood","Cafe de Coral","McDonald's","KFC","Pizza Hut","Starbucks","CHICHA San Chen"]}},
+ {n:"Metro City Plaza",area:"Tseung Kwan O (Po Lam)",tier:"mass",url:"https://www.metrocityplaza.com/en/central/shopping",
+  anchors:"CITISTORE · MCL cinema · huge value + local services · no Apple",
+  b:{"Contemporary / mid fashion":["UNIQLO","H&M","MUJI","G2000","Giordano","Levi's","bauhaus"],
+     "Beauty & cosmetics":["SaSa","Fancl","Colourmix","TONYMOLY","Mannings"],
+     "Sportswear & outdoor":["GigaSports","Sportshouse","MIZUNO","Skechers"],
+     "Electronics & tech":["Xiaomi","csl","Fotomax"],
+     "Kids & toys":["Toys\"R\"Us","Jumpin Gym"],
+     "Home & lifestyle":["MUJI","KUKA HOME","HotMaxx"],
+     "Watches & jewellery":["Chow Tai Fook","Chow Sang Sang","Lukfook","Lovisa"]}},
+ {n:"apm",area:"Kwun Tong, Kowloon East",tier:"upper",url:"http://www.apm-millenniumcity.com/",
+  anchors:"YATA supermarket · B+ cinema · Apple · shops open late (to midnight)",
+  b:{"Contemporary / mid fashion":["UNIQLO","H&M","Charles & Keith"],
+     "Beauty & cosmetics":["Laneige"],
+     "Sportswear & outdoor":["Nike"],
+     "Electronics & tech":["Apple"]}},
+];
+
+// flatten to rows
+const rows=[];
+for(const m of MALLS) for(const c in m.b) for(const br of m.b[c])
+  rows.push({brand:br,cat:c,mall:m.n,area:m.area,tier:m.tier});
+
+let activeCats=new Set(CATS);
+const catchips=document.getElementById("catchips");
+CATS.forEach(c=>{const el=document.createElement("span");el.className="chip on";el.textContent=c;
+  el.onclick=()=>{if(activeCats.has(c)){activeCats.delete(c);el.classList.remove("on");}else{activeCats.add(c);el.classList.add("on");}render();};
+  catchips.appendChild(el);});
+
+let sortK="brand",sortAsc=true;
+document.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;
+  if(sortK===k)sortAsc=!sortAsc;else{sortK=k;sortAsc=true;}render();});
+
+const tierRank={ultra:0,lux:1,upper:2,mid:3,mass:4};
+function render(){
+  const q=document.getElementById("q").value.trim().toLowerCase();
+  let r=rows.filter(x=>activeCats.has(x.cat)&&(q===""||x.brand.toLowerCase().includes(q)||x.mall.toLowerCase().includes(q)));
+  r.sort((a,b)=>{let av=a[sortK],bv=b[sortK];
+    if(sortK==="tier"){av=tierRank[a.tier];bv=tierRank[b.tier];}
+    if(av<bv)return sortAsc?-1:1;if(av>bv)return sortAsc?1:-1;return a.brand.localeCompare(b.brand);});
+  document.getElementById("count").textContent=`${r.length} store listings across ${new Set(r.map(x=>x.mall)).size} malls`;
+  document.getElementById("rows").innerHTML=r.map(x=>{const t=TIER[x.tier];
+    return `<tr><td class="brand">${x.brand}</td><td class="cat">${x.cat}</td><td>${x.mall}</td><td>${x.area}</td><td><span class="tier ${t[1]}">${t[0]}</span></td></tr>`;}).join("")
+    ||`<tr><td colspan="5" style="color:#999;padding:16px">No matches. Try a different brand or re-enable categories.</td></tr>`;
+}
+document.getElementById("q").addEventListener("input",render);
+
+// browse cards
+document.getElementById("cards").innerHTML=MALLS.map(m=>{const t=TIER[m.tier];
+  const lines=Object.keys(m.b).map(c=>`<div class="brandline"><b>${c}:</b> ${m.b[c].join(", ")}</div>`).join("");
+  return `<div class="mall">
+    <h3>${m.n} <span class="tier ${t[1]}">${t[0]}</span></h3>
+    <div class="loc">${m.area}</div>
+    <div class="anchors"><b>Anchors:</b> ${m.anchors}</div>
+    <details><summary>Show notable brands</summary>${lines}</details>
+    <div style="margin-top:8px"><a href="${m.url}" target="_blank" rel="noopener">Official store directory ↗</a></div>
+  </div>`;}).join("");
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
+  const v=t.dataset.view;
+  document.getElementById("find").classList.toggle("hide",v!=="find");
+  document.getElementById("browse").classList.toggle("hide",v!=="browse");
+});
+document.getElementById("srcnote").innerHTML="Compiled from each mall's official store directory (2026) plus reputable guides. Directories change often — tap a mall's official link for the live list. A few tenants flagged during research as under-renovation or pop-up may have shifted.";
+render();
+</script>
+</body>
+</html>
