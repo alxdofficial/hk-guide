@@ -3,42 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Our Hong Kong guide</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='white'%3EHK%3C/text%3E%3C/svg%3E">
+<title>Our Hong Kong & Shenzhen guide</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Ctext x='16' y='22' font-size='15' text-anchor='middle' fill='white'%3EHK%3C/text%3E%3C/svg%3E">
 <style>
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     color:#22201d;background:linear-gradient(160deg,#1f3a5f 0%,#2c5678 45%,#3a7089 100%);display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{background:#fff;border-radius:18px;max-width:720px;width:100%;padding:34px 30px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .card{background:#fff;border-radius:18px;max-width:760px;width:100%;padding:34px 30px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
   h1{font-size:26px;margin:0 0 6px}
-  .sub{color:#77746c;font-size:14px;margin:0 0 26px}
+  .sub{color:#77746c;font-size:14px;margin:0 0 22px}
+  .switch{display:inline-flex;gap:4px;background:#f0ece3;border-radius:999px;padding:4px;margin-bottom:22px}
+  .switch button{font:inherit;font-size:14px;font-weight:600;padding:8px 22px;border:none;background:transparent;border-radius:999px;cursor:pointer;color:#55534d}
+  .switch button.active{background:#fff;color:#1f3a5f;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  .switch button.active.sz{color:#227a6b}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}h1{font-size:22px}}
   a.tile{display:block;text-decoration:none;color:inherit;border:1px solid #e5e1d8;border-radius:14px;padding:20px;transition:.15s;background:#fbf9f4}
   a.tile:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.12);border-color:#c9d3e0}
   .tile .emoji{font-size:30px}
   .tile h2{font-size:17px;margin:10px 0 4px}
   .tile p{font-size:13px;color:#77746c;margin:0}
+  .hide{display:none}
   .foot{margin-top:24px;font-size:12px;color:#a8a49a;text-align:center}
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>Our Hong Kong guide 🇭🇰</h1>
-    <p class="sub">Everything mapped out for the move — where to explore, shop, eat, and hang out.</p>
-    <div class="grid">
+    <h1>Our Hong Kong &amp; Shenzhen guide 🇭🇰</h1>
+    <p class="sub">Everything mapped out for the move — where to explore, shop, eat, and hang out, on both sides of the border.</p>
+    <div class="switch">
+      <button id="btnHK" class="active" onclick="showCity('hk')">🇭🇰 Hong Kong</button>
+      <button id="btnSZ" class="sz" onclick="showCity('sz')">🇨🇳 Shenzhen</button>
+    </div>
+
+    <div id="hk" class="grid">
       <a class="tile" href="map.html">
         <div class="emoji">🗺️</div>
-        <h2>Explore map</h2>
-        <p>92 spots — markets, malls, food, nightlife, sights, viewpoints, nature &amp; hikes, temples, museums and heritage. Filter by category; each pin shows how to get there.</p>
+        <h2>Hong Kong — explore map</h2>
+        <p>92 spots — markets, malls, food, nightlife, sights, viewpoints, nature &amp; hikes, temples, museums and heritage. Your flat &amp; hotels marked.</p>
       </a>
       <a class="tile" href="malls.html">
         <div class="emoji">🛍️</div>
-        <h2>Mall &amp; brand directory</h2>
-        <p>17 malls, 650+ store listings. Search a brand to see which malls carry it, or browse each mall with a link to its official directory.</p>
+        <h2>Hong Kong — mall directory</h2>
+        <p>17 malls, 669 store listings. Search a brand to see which malls carry it, or browse each mall with a link to its official directory.</p>
       </a>
     </div>
-    <div class="foot">Made for our move to LOHAS Park. Tap a card to open.</div>
+
+    <div id="sz" class="grid hide">
+      <a class="tile" href="szmap.html">
+        <div class="emoji">🗺️</div>
+        <h2>Shenzhen — explore map</h2>
+        <p>59 spots — Huaqiangbei &amp; markets, malls, food, nightlife, theme parks, viewpoints, nature, museums &amp; old towns. HK border crossings marked.</p>
+      </a>
+      <a class="tile" href="szmalls.html">
+        <div class="emoji">🛍️</div>
+        <h2>Shenzhen — mall directory</h2>
+        <p>12 malls across Futian, Nanshan, Luohu &amp; Qianhai — MixC, COCO Park, UpperHills, Uniwalk and more, with the Apple-Store and hard-luxury reality checks.</p>
+      </a>
+    </div>
+
+    <div class="foot">Made for our move to LOHAS Park. Pick a city, then tap a card.</div>
   </div>
+<script>
+  function showCity(c){
+    document.getElementById('hk').classList.toggle('hide', c!=='hk');
+    document.getElementById('sz').classList.toggle('hide', c!=='sz');
+    document.getElementById('btnHK').classList.toggle('active', c==='hk');
+    document.getElementById('btnSZ').classList.toggle('active', c==='sz');
+  }
+</script>
 </body>
 </html>
